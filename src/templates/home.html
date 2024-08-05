@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Function Draggable Elements</title>
+    <style>
+        /* CSS for draggable elements */
+        .draggable {
+            border: 1px solid #ccc;
+            padding: 5px; /* Reduced padding */
+            margin: 5px; /* Reduced margin */
+            cursor: move;
+            width: 150px; /* Reduced width */
+            font-size: 14px; /* Adjust font size if needed */
+        }
+
+        /* CSS for drop zone */
+        .drop-zone {
+            border: 2px dashed #ccc;
+            padding: 20px;
+            margin-top: 20px;
+            min-height: 100px;
+        }
+
+        .functions-container {
+            display: flex;
+            flex-wrap: wrap;
+        }
+
+        .function-container {
+            width: 100%;
+            margin-bottom: 5px;
+        }
+
+        .function-container label {
+            display: block;
+            margin-bottom: 2px;
+        }
+
+        .function-container input[type="text"] {
+            width: 100%;
+            box-sizing: border-box;
+            padding: 3px;
+            margin-bottom: 5px;
+            font-size: 12px; /* Adjust font size if needed */
+        }
+
+        .delete-button {
+            background-color: red;
+            color: white;
+            border: none;
+            padding: 3px 6px; /* Adjust padding */
+            cursor: pointer;
+            margin-top: 5px; /* Adjust margin */
+            font-size: 12px; /* Adjust font size */
+        }
+    </style>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+</head>
+<body class="bg-primary-subtle">
+    <br>
+    <div class="container" style="width: 50%; height: 100%;">
+        <h1>NoCode Ai</h1>
+        <p>This is an application to generate Python functions with Gemini Ai by writing a prompt. Drag and drop the generated functions into the desired sequence
+            in the workspace and run your code.
+        </p>
+        <div class="form-floating">
+        <form id="prompt-form">
+            <textarea id="prompt-textarea" placeholder="Enter your prompt here" style="width: 100%;"></textarea>
+            <button type="submit" class="btn btn-primary">Send prompt</button>
+        </form>
+        </div>
+        
+        <h1>Functions</h1>
+        <div class="functions-container" id="functions-container"></div>
+
+        <h2>Workspace</h2>
+        <div id="drop-zone" class="drop-zone bg-white" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
+
+        <form id="order-form">
+            <br>
+            <button type="button" onclick="submitForm()" class="btn btn-primary">RUN</button>
+        </form>
+    </div>
+    <br><br>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+<script>
+
+    document.getElementById('prompt-form').addEventListener('submit', async function(event) {
+                event.preventDefault();
+
+                const prompt = document.getElementById('prompt-textarea').value;
+
+                try {
+                    const response = await fetch('http://127.0.0.1:5000/generate_code', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ prompt })
+                    });
+
+                    if (response.ok) {
+                        const data = await response.json();
+                        alert('Success: ' + data.message);
+                    } else {
+                        const errorData = await response.json();
+                        alert('Error: ' + errorData.detail);
+                    }
+                } catch (error) {
+                    alert('Error: ' + error.message);
+                }
+    });
+    // Function to allow drop
+    function allowDrop(event) {
+        event.preventDefault();
+    }
+
+    // Function to handle dropping
+    function drop(event) {
+        event.preventDefault();
+        const functionName = event.dataTransfer.getData('text/plain');
+        const draggableElement = document.getElementById(functionName);
+
+        // Create a clone of the draggable item with input fields and delete button
+        const clone = draggableElement.cloneNode(true);
+        clone.id = functionName + '-' + Date.now(); // Ensure unique ID
+        clone.classList.add('draggable');
+        clone.draggable = false; // Disable dragging for clones
+
+        // Add delete button
+        const deleteButton = document.createElement('button');
+        deleteButton.textContent = 'Delete';
+        deleteButton.classList.add('delete-button');
+        deleteButton.onclick = function() {
+            clone.remove();
+        };
+        clone.appendChild(deleteButton);
+
+        // Add clone to the drop zone
+        document.getElementById('drop-zone').appendChild(clone);
+    }
+
+    // Function to determine the type of the variable
+    function determineType(value) {
+        if (!isNaN(value)) {
+            return value.includes('.') ? 'float' : 'int';
+        }
+        return 'str';
+    }
+
+    // Function to submit form
+    function submitForm() {
+        const dropZoneItems = document.querySelectorAll('.drop-zone .draggable');
+        const codeArray = [];
+        const varsArray = [];
+
+        dropZoneItems.forEach(function(item) {
+            const functionName = item.querySelector('b').textContent.trim();
+            const inputValues = Array.from(item.querySelectorAll('input')).map(input => {
+                const value = input.value.trim();
+                const type = determineType(value);
+                return `${value}_${type}`;
+            });
+            const varsString = inputValues.join(":");
+
+            codeArray.push(functionName);
+            varsArray.push(varsString);
+        });
+
+        const requestData = {
+            code: codeArray.join(" "),
+            vars: varsArray.join(" ")
+        };
+
+        console.log(requestData);
+        
+        // Make the POST request
+        fetch('http://127.0.0.1:5000/run_code', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(requestData),
+        })
+        .then(response => response.json())
+        .then(data => {
+            console.log('Success:', data);
+            alert('Output: ' + data.output);
+        })
+        .catch((error) => {
+            console.error('Error:', error);
+            alert('Error: ' + error);
+        });
+    }
+
+    // Fetch function info from the server
+    async function fetchFunctionInfo() {
+        const response = await fetch('http://127.0.0.1:5000/info');
+        const data = await response.json();
+        return data.info;
+    }
+
+    // Create draggable elements for functions
+    async function createDraggableElements() {
+        const info = await fetchFunctionInfo();
+        const container = document.getElementById('functions-container');
+
+        info.forEach(([name, signature]) => {
+            const draggable = document.createElement('div');
+            draggable.id = name; // Set id for the draggable element
+            draggable.classList.add('draggable');
+            draggable.classList.add("badge");
+            draggable.classList.add("text-bg-primary");
+            draggable.draggable = true;
+
+            // Parse function parameters from the signature
+            const paramRegex = /\((.*?)\)/;
+            const paramsMatch = signature.match(paramRegex);
+            let paramString = "";
+            if (paramsMatch && paramsMatch.length > 1) {
+                const params = paramsMatch[1].split(",");
+                params.forEach(param => {
+                    paramString += `<label for="${name}-${param.trim()}">${param.trim()}: </label>`;
+                    paramString += `<input type="text" id="${name}-${param.trim()}" name="${name}-${param.trim()}" placeholder="Enter ${param.trim()}"><br>`;
+                });
+            }
+
+            draggable.innerHTML = `
+                <b>${name}</b><br>
+                <form class="function-container">${paramString}</form>
+            `;
+
+            draggable.addEventListener('dragstart', function (event) {
+                event.dataTransfer.setData('text/plain', name); // Pass function name while dragging
+            });
+
+            container.appendChild(draggable);
+        });
+    }
+
+    // Initialize draggable elements
+    document.addEventListener('DOMContentLoaded', () => {
+        createDraggableElements();
+    });
+</script>
+
+</body>
+</html>
