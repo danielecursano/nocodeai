@@ -20,7 +20,7 @@
             border: 2px dashed #ccc;
             padding: 20px;
             margin-top: 20px;
-            min-height: 100px;
+            min-height: 500px;
         }
 
         .functions-container {
@@ -60,28 +60,32 @@
 </head>
 <body class="bg-primary-subtle">
     <br>
-    <div class="container" style="width: 50%; height: 100%;">
-        <h1>NoCode Ai</h1>
-        <p>This is an application to generate Python functions with Gemini Ai by writing a prompt. Drag and drop the generated functions into the desired sequence
-            in the workspace and run your code.
-        </p>
-        <div class="form-floating">
-        <form id="prompt-form">
-            <textarea id="prompt-textarea" placeholder="Enter your prompt here" style="width: 100%;"></textarea>
-            <button type="submit" class="btn btn-primary">Send prompt</button>
-        </form>
-        </div>
-        
-        <h1>Functions</h1>
-        <div class="functions-container" id="functions-container"></div>
-
-        <h2>Workspace</h2>
-        <div id="drop-zone" class="drop-zone bg-white" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
-
-        <form id="order-form">
+    <div class="container position-relative">
+        <div class="container position-absolute start-0" style="width: 30%;">
+            <h1>NoCode Ai</h1>
+            <p>This is an application to generate Python functions with Gemini Ai by writing a prompt. Drag and drop the generated functions into the desired sequence
+                in the workspace and run your code.
+            </p>
+            <div class="form-floating">
+            <form id="prompt-form">
+                <textarea id="prompt-textarea" placeholder="Enter your prompt here" style="width: 100%;"></textarea>
+                <button type="submit" class="btn btn-primary">Send prompt</button>
+            </form>
+            </div>
+            
+            <h1>Functions</h1>
+            <div class="functions-container" id="functions-container"></div>
             <br>
-            <button type="button" onclick="submitForm()" class="btn btn-primary">RUN</button>
-        </form>
+        </div>
+        <div class="container position-relative" style="left: 10%; width: 50%;">
+            <h3>Workspace</h3>
+            <div id="drop-zone" class="drop-zone bg-white" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
+
+            <form id="order-form">
+                <br>
+                <button type="button" onclick="submitForm()" class="btn btn-primary">RUN</button>
+            </form>
+        </div>
     </div>
     <br><br>
 

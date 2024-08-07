@@ -40,7 +40,9 @@ async def generate_code(prompt: str=Body(..., embed=True)):
     
 @router.post("/run_code")
 async def run_code(code: str=Body(...), vars: str=Body(...)):
-    code = [FUNCTIONS[x] for x in code.split(" ")]
+    code = [FUNCTIONS[x] for x in code.split(" ") if x in FUNCTIONS.keys()]
+    if not code:
+        return JSONResponse(content={"message": "Failed", "output": "No code given"}, status_code=400)
     vars = parse_vars(vars)
     x = FunctionRunner(code, vars)
     try:
